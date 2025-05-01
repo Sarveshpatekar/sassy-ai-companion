@@ -1,5 +1,6 @@
+
 import { Task } from '@/components/TasksCard';
-import { getUserLocation } from './speechService';
+import { getUserLocation, searchGoogle } from './speechService';
 
 let cachedLocation = { city: "Loading...", country: "..." };
 
@@ -72,19 +73,32 @@ export const getSystemStatus = () => {
   };
 };
 
-export const getJarvisResponse = (message: string): Promise<string> => {
-  // Mock AI response with a delay
+export const getJarvisResponse = async (message: string): Promise<string> => {
+  // Check if it's a question or search query
+  const isQuestion = /who|what|when|where|why|how|can you|tell me about|search for|find|look up/i.test(message);
+  
+  // If it seems like a question, try to search for information
+  if (isQuestion) {
+    try {
+      const searchResult = await searchGoogle(message);
+      return searchResult;
+    } catch (error) {
+      console.error('Error during search:', error);
+      // Fall back to pattern matching if search fails
+    }
+  }
+  
+  // Simple pattern matching for responses
   return new Promise((resolve) => {
     setTimeout(() => {
       const lowerMessage = message.toLowerCase();
       
-      // Simple pattern matching for responses
       if (lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
         resolve("Hello there. I'm Jarvis, your personal AI assistant. How may I assist you today?");
       } 
       else if (lowerMessage.includes('weather')) {
-        const { temperature, condition } = getWeatherData();
-        resolve(`Currently, it's ${temperature}°C and ${condition} in New York. Would you like the extended forecast?`);
+        const { temperature, condition, location } = getWeatherData();
+        resolve(`Currently, it's ${temperature}°C and ${condition} in ${location}. Would you like the extended forecast?`);
       }
       else if (lowerMessage.includes('time')) {
         const now = new Date();
@@ -107,11 +121,11 @@ export const getJarvisResponse = (message: string): Promise<string> => {
       }
       else {
         const responses = [
-          "I understand what you're saying, but I'm not sure how to help with that specifically. Perhaps try being more explicit in your request?",
-          "Interesting query. While I process that, is there anything else I can assist you with?",
-          "I see. Let me analyze that request further. My capabilities are impressive but occasionally have limitations.",
-          "While I'd love to help with that, I might need more specifics. Care to elaborate?",
-          "I'm processing your request with my usual brilliance, but might need additional details to provide a satisfactory response."
+          "I'm searching for information about that. Give me a moment...",
+          "Let me analyze that request and find the most relevant information for you.",
+          "I'll need to search my databases for that information. One moment please.",
+          "That's an interesting question. Let me search for the answer.",
+          "I'm connecting to external knowledge sources to find you the best answer."
         ];
         const randomResponse = responses[Math.floor(Math.random() * responses.length)];
         resolve(randomResponse);

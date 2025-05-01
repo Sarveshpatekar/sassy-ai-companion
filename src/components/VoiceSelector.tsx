@@ -30,14 +30,14 @@ const VoiceSelector: React.FC<VoiceSelectorProps> = ({
         onValueChange={handleVoiceChange}
         className="flex flex-col space-y-2"
       >
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 cursor-pointer">
           <RadioGroupItem value="male" id="male-voice" />
-          <Label htmlFor="male-voice" className="text-sm">Male Voice (J.A.R.V.I.S)</Label>
+          <Label htmlFor="male-voice" className="text-sm cursor-pointer">Male Voice (J.A.R.V.I.S)</Label>
         </div>
         
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 cursor-pointer">
           <RadioGroupItem value="female" id="female-voice" />
-          <Label htmlFor="female-voice" className="text-sm">Female Voice (F.R.I.D.A.Y)</Label>
+          <Label htmlFor="female-voice" className="text-sm cursor-pointer">Female Voice (F.R.I.D.A.Y)</Label>
         </div>
       </RadioGroup>
     </div>

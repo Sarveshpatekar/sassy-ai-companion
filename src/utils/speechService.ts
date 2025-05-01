@@ -11,36 +11,25 @@ export const speak = (text: string, voiceType: VoiceType = 'male', rate = 1, pit
     // Create utterance
     const utterance = new SpeechSynthesisUtterance(text);
     
-    // Configure voice
-    window.speechSynthesis.onvoiceschanged = () => {
-      const voices = window.speechSynthesis.getVoices();
-      
-      // Find appropriate voice based on type
-      const preferredVoice = voices.find(voice => {
-        if (voiceType === 'male') {
-          return voice.lang.includes('en') && (voice.name.includes('Male') || voice.name.includes('Google UK English Male'));
-        } else {
-          return voice.lang.includes('en') && (voice.name.includes('Female') || voice.name.includes('Google UK English Female'));
-        }
-      }) || voices.find(voice => voice.lang.includes('en'));
-      
-      if (preferredVoice) {
-        utterance.voice = preferredVoice;
-      }
-      
-      // Set parameters
-      utterance.rate = rate;
-      utterance.pitch = voiceType === 'female' ? pitch * 1.2 : pitch; // Slightly higher pitch for female voice
-      utterance.volume = 1;
-      
-      // Speak
-      window.speechSynthesis.speak(utterance);
-    };
+    const voices = window.speechSynthesis.getVoices();
     
-    // Load voices if needed
-    if (window.speechSynthesis.getVoices().length > 0) {
-      window.speechSynthesis.onvoiceschanged(new Event('voiceschanged'));
+    // Find appropriate voice based on type
+    const preferredVoice = voices.find(voice => {
+      if (voiceType === 'male') {
+        return voice.lang.includes('en') && (voice.name.includes('Male') || voice.name.includes('Google UK English Male'));
+      } else {
+        return voice.lang.includes('en') && (voice.name.includes('Female') || voice.name.includes('Google UK English Female'));
+      }
+    }) || voices.find(voice => voice.lang.includes('en'));
+    
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
     }
+    
+    // Set parameters
+    utterance.rate = rate;
+    utterance.pitch = voiceType === 'female' ? pitch * 1.2 : pitch; // Slightly higher pitch for female voice
+    utterance.volume = 1;
     
     // Add event listeners
     utterance.onend = () => {
@@ -50,6 +39,9 @@ export const speak = (text: string, voiceType: VoiceType = 'male', rate = 1, pit
     utterance.onerror = () => {
       resolve();
     };
+    
+    // Speak
+    window.speechSynthesis.speak(utterance);
   });
 };
 
@@ -154,4 +146,31 @@ export const getUserLocation = (): Promise<{city: string, country: string}> => {
       resolve({ city: "Unknown", country: "Location" });
     }
   });
+};
+
+// Search Google for information
+export const searchGoogle = async (query: string): Promise<string> => {
+  try {
+    // Using a free search API service
+    const response = await fetch(`https://serpapi.com/search?q=${encodeURIComponent(query)}&api_key=demo`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch search results');
+    }
+    
+    const data = await response.json();
+    
+    // Extract relevant information from search results
+    if (data.organic_results && data.organic_results.length > 0) {
+      const firstResult = data.organic_results[0];
+      return `According to search results: ${firstResult.snippet || firstResult.title}`;
+    } else if (data.knowledge_graph) {
+      return `${data.knowledge_graph.title}: ${data.knowledge_graph.description}`;
+    } else {
+      return "I couldn't find specific information about that. Would you like me to try a different search?";
+    }
+  } catch (error) {
+    console.error('Error searching for information:', error);
+    return "I apologize, but I'm having trouble connecting to search services right now. Is there anything else I can help with?";
+  }
 };
