@@ -1,28 +1,29 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 220 20% 97%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 214 100% 50%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 346 100% 59%;
+    --secondary-foreground: 210 40% 98%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
+    --accent: 142 69% 58%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
@@ -30,47 +31,40 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 214 100% 50%;
 
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 224 71% 4%;
+    --popover-foreground: 215 20.2% 65.1%;
 
-    --primary: 210 40% 98%;
+    --primary: 214 100% 50%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 346 100% 59%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
+    --muted: 223 47% 11%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 142 69% 58%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
@@ -78,15 +72,16 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --ring: 214 100% 50%;
+
+    --sidebar-background: 224 71% 4%;
+    --sidebar-foreground: 213 31% 91%;
+    --sidebar-primary: 214 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 213 31% 91%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 214 100% 50%;
   }
 }
 
@@ -94,8 +89,92 @@
   * {
     @apply border-border;
   }
-
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground dark;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .jarvis-card {
+    @apply bg-jarvis-dark border border-jarvis-muted rounded-lg p-4 relative overflow-hidden backdrop-blur-sm;
+  }
+
+  .jarvis-card::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-br from-transparent via-jarvis-primary/5 to-jarvis-secondary/10 z-0;
+  }
+
+  .jarvis-input {
+    @apply bg-jarvis-muted/50 border border-jarvis-primary/30 rounded-lg px-4 py-2 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-jarvis-primary/50 w-full;
+  }
+
+  .jarvis-gradient-text {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-jarvis-primary to-jarvis-secondary;
+  }
+
+  .jarvis-button {
+    @apply bg-gradient-to-r from-jarvis-primary to-jarvis-primary/80 hover:from-jarvis-primary/90 hover:to-jarvis-primary 
+    text-white font-medium py-2 px-4 rounded-md transition-all duration-300 flex items-center justify-center gap-2;
+  }
+
+  .jarvis-button-secondary {
+    @apply bg-gradient-to-r from-jarvis-secondary to-jarvis-secondary/80 hover:from-jarvis-secondary/90 hover:to-jarvis-secondary
+    text-white font-medium py-2 px-4 rounded-md transition-all duration-300 flex items-center justify-center gap-2;
+  }
+
+  .jarvis-border-glow {
+    @apply border border-jarvis-primary/50 animate-glow;
+  }
+
+  .bg-mesh-gradient {
+    background: linear-gradient(125deg, rgba(0, 0, 10, 0.8) 0%, rgba(18, 18, 30, 0.8) 100%),
+                radial-gradient(circle at 50% 50%, rgba(7, 112, 243, 0.1), rgba(255, 45, 85, 0.1));
+    background-blend-mode: screen;
+  }
+
+  .typing-indicator {
+    @apply flex gap-1;
+  }
+
+  .typing-indicator span {
+    @apply block w-2 h-2 rounded-full bg-jarvis-primary;
+    animation: typing-bounce 1.4s infinite ease-in-out both;
+  }
+
+  .typing-indicator span:nth-child(1) {
+    animation-delay: -0.32s;
+  }
+
+  .typing-indicator span:nth-child(2) {
+    animation-delay: -0.16s;
+  }
+
+  @keyframes typing-bounce {
+    0%, 80%, 100% {
+      transform: scale(0.6);
+      opacity: 0.6;
+    }
+    40% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .arc-reactor {
+    @apply w-14 h-14 rounded-full bg-gradient-to-r from-jarvis-primary to-jarvis-secondary/70 flex items-center justify-center relative overflow-hidden;
+    box-shadow: 0 0 15px rgba(0, 112, 243, 0.7), 0 0 30px rgba(0, 112, 243, 0.4) inset;
+  }
+
+  .arc-reactor::before {
+    content: '';
+    @apply absolute w-10 h-10 rounded-full bg-jarvis-dark;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.8) inset;
+  }
+
+  .arc-reactor::after {
+    content: '';
+    @apply absolute w-6 h-6 rounded-full bg-gradient-to-br from-jarvis-primary to-jarvis-secondary animate-arc-reactor;
+    filter: blur(1px);
   }
 }
