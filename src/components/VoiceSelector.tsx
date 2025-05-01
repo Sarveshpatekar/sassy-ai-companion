@@ -18,6 +18,7 @@ const VoiceSelector: React.FC<VoiceSelectorProps> = ({
   className
 }) => {
   const handleVoiceChange = (value: string) => {
+    console.log("Voice changed to:", value);
     onVoiceChange(value as VoiceType);
   };
 
@@ -30,13 +31,13 @@ const VoiceSelector: React.FC<VoiceSelectorProps> = ({
         onValueChange={handleVoiceChange}
         className="flex flex-col space-y-2"
       >
-        <div className="flex items-center space-x-2 cursor-pointer">
-          <RadioGroupItem value="male" id="male-voice" />
+        <div className="flex items-center space-x-2">
+          <RadioGroupItem value="male" id="male-voice" className="cursor-pointer" />
           <Label htmlFor="male-voice" className="text-sm cursor-pointer">Male Voice (J.A.R.V.I.S)</Label>
         </div>
         
-        <div className="flex items-center space-x-2 cursor-pointer">
-          <RadioGroupItem value="female" id="female-voice" />
+        <div className="flex items-center space-x-2">
+          <RadioGroupItem value="female" id="female-voice" className="cursor-pointer" />
           <Label htmlFor="female-voice" className="text-sm cursor-pointer">Female Voice (F.R.I.D.A.Y)</Label>
         </div>
       </RadioGroup>
