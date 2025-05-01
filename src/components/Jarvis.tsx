@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage, { ChatMessageProps, MessageType } from './ChatMessage';
@@ -20,7 +21,9 @@ import {
   speak, 
   initSpeechRecognition, 
   startListening, 
-  stopListening
+  stopListening,
+  getUserLocation,
+  VoiceType as SpeechVoiceType
 } from '@/utils/speechService';
 
 const Jarvis: React.FC = () => {

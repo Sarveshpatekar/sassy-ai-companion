@@ -17,13 +17,17 @@ const VoiceSelector: React.FC<VoiceSelectorProps> = ({
   onVoiceChange,
   className
 }) => {
+  const handleVoiceChange = (value: string) => {
+    onVoiceChange(value as VoiceType);
+  };
+
   return (
     <div className={cn("jarvis-card", className)}>
       <h3 className="text-sm font-semibold text-gray-300 mb-3">Voice Settings</h3>
       
       <RadioGroup 
         value={currentVoice} 
-        onValueChange={(value) => onVoiceChange(value as VoiceType)}
+        onValueChange={handleVoiceChange}
         className="flex flex-col space-y-2"
       >
         <div className="flex items-center space-x-2">

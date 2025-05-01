@@ -1,3 +1,4 @@
+
 export type VoiceType = 'male' | 'female';
 
 export const speak = (text: string, voiceType: VoiceType = 'male', rate = 1, pitch = 1): Promise<void> => {
@@ -11,25 +12,35 @@ export const speak = (text: string, voiceType: VoiceType = 'male', rate = 1, pit
     const utterance = new SpeechSynthesisUtterance(text);
     
     // Configure voice
-    const voices = window.speechSynthesis.getVoices();
-    
-    // Find appropriate voice based on type
-    const preferredVoice = voices.find(voice => {
-      if (voiceType === 'male') {
-        return voice.lang === 'en-US' && voice.name.includes('Male');
-      } else {
-        return voice.lang === 'en-US' && voice.name.includes('Female');
+    window.speechSynthesis.onvoiceschanged = () => {
+      const voices = window.speechSynthesis.getVoices();
+      
+      // Find appropriate voice based on type
+      const preferredVoice = voices.find(voice => {
+        if (voiceType === 'male') {
+          return voice.lang.includes('en') && (voice.name.includes('Male') || voice.name.includes('Google UK English Male'));
+        } else {
+          return voice.lang.includes('en') && (voice.name.includes('Female') || voice.name.includes('Google UK English Female'));
+        }
+      }) || voices.find(voice => voice.lang.includes('en'));
+      
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
       }
-    });
+      
+      // Set parameters
+      utterance.rate = rate;
+      utterance.pitch = voiceType === 'female' ? pitch * 1.2 : pitch; // Slightly higher pitch for female voice
+      utterance.volume = 1;
+      
+      // Speak
+      window.speechSynthesis.speak(utterance);
+    };
     
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
+    // Load voices if needed
+    if (window.speechSynthesis.getVoices().length > 0) {
+      window.speechSynthesis.onvoiceschanged(new Event('voiceschanged'));
     }
-    
-    // Set parameters
-    utterance.rate = rate;
-    utterance.pitch = voiceType === 'female' ? pitch * 1.2 : pitch; // Slightly higher pitch for female voice
-    utterance.volume = 1;
     
     // Add event listeners
     utterance.onend = () => {
@@ -39,9 +50,6 @@ export const speak = (text: string, voiceType: VoiceType = 'male', rate = 1, pit
     utterance.onerror = () => {
       resolve();
     };
-    
-    // Speak
-    window.speechSynthesis.speak(utterance);
   });
 };
 
