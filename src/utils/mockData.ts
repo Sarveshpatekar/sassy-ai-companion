@@ -1,5 +1,12 @@
-
 import { Task } from '@/components/TasksCard';
+import { getUserLocation } from './speechService';
+
+let cachedLocation = { city: "Loading...", country: "..." };
+
+// Initialize location immediately
+getUserLocation().then(location => {
+  cachedLocation = location;
+});
 
 export const getWeatherData = () => {
   const conditions = ['sunny', 'cloudy', 'rainy'] as const;
@@ -9,7 +16,8 @@ export const getWeatherData = () => {
   return {
     temperature,
     condition,
-    location: 'New York, NY'
+    location: `${cachedLocation.city}, ${cachedLocation.country}`,
+    isLoading: cachedLocation.city === "Loading..."
   };
 };
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage, { ChatMessageProps, MessageType } from './ChatMessage';
@@ -9,6 +8,7 @@ import NewsCard from './NewsCard';
 import TasksCard, { Task } from './TasksCard';
 import SystemStatus from './SystemStatus';
 import ShareButton from './ShareButton';
+import VoiceSelector, { VoiceType } from './VoiceSelector';
 import { 
   getWeatherData, 
   getNewsData, 
@@ -43,6 +43,7 @@ const Jarvis: React.FC = () => {
   const [newsData, setNewsData] = useState(getNewsData());
   const [tasks, setTasks] = useState<Task[]>(getInitialTasks());
   const [systemStatus, setSystemStatus] = useState(getSystemStatus());
+  const [voiceType, setVoiceType] = useState<VoiceType>('male');
   
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -75,6 +76,15 @@ const Jarvis: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
   
+  // Update weather data periodically to check for location updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setWeatherData(getWeatherData());
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, []);
+  
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -86,9 +96,9 @@ const Jarvis: React.FC = () => {
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
     if (lastMessage && lastMessage.type === 'assistant') {
-      speak(lastMessage.content);
+      speak(lastMessage.content, voiceType);
     }
-  }, [messages]);
+  }, [messages, voiceType]);
   
   // Event handlers
   const handleUserMessage = async (text: string) => {
@@ -178,6 +188,20 @@ const Jarvis: React.FC = () => {
     setTasks(prev => prev.filter(task => task.id !== id));
   };
   
+  const handleVoiceChange = (newVoice: VoiceType) => {
+    setVoiceType(newVoice);
+    
+    // Let the user know about the voice change
+    const assistantName = newVoice === 'male' ? 'Jarvis' : 'Friday';
+    const message = `Voice switched to ${assistantName}. How may I assist you?`;
+    
+    setMessages(prev => [...prev, {
+      type: 'assistant',
+      content: message,
+      timestamp: new Date()
+    }]);
+  };
+  
   return (
     <div className="flex flex-col h-screen bg-jarvis-dark text-white relative overflow-hidden">
       {/* Background gradient */}
@@ -188,7 +212,9 @@ const Jarvis: React.FC = () => {
         <div className="flex items-center">
           <ArcReactor className="mr-3" />
           <div>
-            <h1 className="text-xl font-bold jarvis-gradient-text">J.A.R.V.I.S.</h1>
+            <h1 className="text-xl font-bold jarvis-gradient-text">
+              {voiceType === 'male' ? 'J.A.R.V.I.S.' : 'F.R.I.D.A.Y.'}
+            </h1>
             <p className="text-xs text-gray-400">Just A Rather Very Intelligent System</p>
           </div>
         </div>
@@ -233,6 +259,12 @@ const Jarvis: React.FC = () => {
               temperature={weatherData.temperature}
               condition={weatherData.condition}
               location={weatherData.location}
+              isLoading={weatherData.isLoading}
+            />
+            
+            <VoiceSelector
+              currentVoice={voiceType}
+              onVoiceChange={handleVoiceChange}
             />
             
             <TasksCard 

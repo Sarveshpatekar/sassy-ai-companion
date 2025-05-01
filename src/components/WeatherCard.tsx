@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Cloud, CloudRain, Sun, Thermometer } from 'lucide-react';
+import { Cloud, CloudRain, Sun, Thermometer, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface WeatherCardProps {
@@ -8,13 +8,15 @@ interface WeatherCardProps {
   condition: 'sunny' | 'cloudy' | 'rainy';
   location: string;
   className?: string;
+  isLoading?: boolean;
 }
 
 const WeatherCard: React.FC<WeatherCardProps> = ({
   temperature,
   condition,
   location,
-  className
+  className,
+  isLoading = false
 }) => {
   const getWeatherIcon = () => {
     switch (condition) {
@@ -31,7 +33,7 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
     <div className={cn("jarvis-card flex flex-col", className)}>
       <div className="flex justify-between items-center mb-2 z-10">
         <h3 className="text-sm font-semibold text-gray-300">Weather</h3>
-        {getWeatherIcon()}
+        {isLoading ? <Loader2 className="h-8 w-8 text-jarvis-secondary animate-spin" /> : getWeatherIcon()}
       </div>
 
       <div className="flex items-center gap-2 z-10">
@@ -39,7 +41,9 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
         <span className="text-2xl font-bold">{temperature}°C</span>
       </div>
       
-      <p className="text-sm text-gray-400 mt-1 z-10">{location}</p>
+      <p className="text-sm text-gray-400 mt-1 z-10">
+        {isLoading ? "Getting location..." : location}
+      </p>
     </div>
   );
 };
