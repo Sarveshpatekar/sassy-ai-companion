@@ -3,6 +3,7 @@ import React from 'react';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { cn } from '@/lib/utils';
+import { Volume2 } from 'lucide-react';
 
 export type VoiceType = 'male' | 'female';
 
@@ -22,23 +23,33 @@ const VoiceSelector: React.FC<VoiceSelectorProps> = ({
     onVoiceChange(value as VoiceType);
   };
 
+  // Improved styling for better clickability
   return (
     <div className={cn("jarvis-card", className)}>
-      <h3 className="text-sm font-semibold text-gray-300 mb-3">Voice Settings</h3>
+      <div className="flex items-center gap-2 mb-3">
+        <Volume2 className="h-5 w-5 text-jarvis-primary" />
+        <h3 className="text-sm font-semibold text-gray-300">Voice Settings</h3>
+      </div>
       
       <RadioGroup 
         value={currentVoice} 
         onValueChange={handleVoiceChange}
-        className="flex flex-col space-y-2"
+        className="flex flex-col space-y-3"
       >
-        <div className="flex items-center space-x-2">
-          <RadioGroupItem value="male" id="male-voice" className="cursor-pointer" />
-          <Label htmlFor="male-voice" className="text-sm cursor-pointer">Male Voice (J.A.R.V.I.S)</Label>
+        <div className="flex items-center space-x-2 w-full cursor-pointer" 
+             onClick={() => handleVoiceChange('male')}>
+          <RadioGroupItem value="male" id="male-voice" />
+          <Label htmlFor="male-voice" className="text-sm cursor-pointer flex-1">
+            Male Voice (J.A.R.V.I.S)
+          </Label>
         </div>
         
-        <div className="flex items-center space-x-2">
-          <RadioGroupItem value="female" id="female-voice" className="cursor-pointer" />
-          <Label htmlFor="female-voice" className="text-sm cursor-pointer">Female Voice (F.R.I.D.A.Y)</Label>
+        <div className="flex items-center space-x-2 w-full cursor-pointer"
+             onClick={() => handleVoiceChange('female')}>
+          <RadioGroupItem value="female" id="female-voice" />
+          <Label htmlFor="female-voice" className="text-sm cursor-pointer flex-1">
+            Female Voice (F.R.I.D.A.Y)
+          </Label>
         </div>
       </RadioGroup>
     </div>
