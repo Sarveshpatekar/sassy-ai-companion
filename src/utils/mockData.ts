@@ -1,5 +1,6 @@
 
 import { Task } from '@/components/TasksCard';
+import { WeatherCondition } from '@/components/WeatherCard';
 import { getUserLocation, searchGoogle } from './speechService';
 
 let cachedLocation = { city: "Loading...", country: "..." };
@@ -10,7 +11,7 @@ getUserLocation().then(location => {
 });
 
 export const getWeatherData = () => {
-  const conditions = ['sunny', 'cloudy', 'rainy', 'partly cloudy', 'thunderstorm', 'clear'] as const;
+  const conditions: WeatherCondition[] = ['sunny', 'cloudy', 'rainy', 'partly cloudy', 'thunderstorm', 'clear'];
   const condition = conditions[Math.floor(Math.random() * conditions.length)];
   const temperature = Math.floor(Math.random() * 15) + 15; // Between 15-30
   

@@ -23,7 +23,7 @@ const VoiceSelector: React.FC<VoiceSelectorProps> = ({
     onVoiceChange(value as VoiceType);
   };
 
-  // Improved styling for better clickability
+  // Enhanced click handlers for better interactivity
   return (
     <div className={cn("jarvis-card", className)}>
       <div className="flex items-center gap-2 mb-3">
@@ -36,16 +36,20 @@ const VoiceSelector: React.FC<VoiceSelectorProps> = ({
         onValueChange={handleVoiceChange}
         className="flex flex-col space-y-3"
       >
-        <div className="flex items-center space-x-2 w-full cursor-pointer" 
-             onClick={() => handleVoiceChange('male')}>
+        <div 
+          className="flex items-center space-x-2 w-full cursor-pointer p-2 rounded hover:bg-jarvis-muted/20" 
+          onClick={() => handleVoiceChange('male')}
+        >
           <RadioGroupItem value="male" id="male-voice" />
           <Label htmlFor="male-voice" className="text-sm cursor-pointer flex-1">
             Male Voice (J.A.R.V.I.S)
           </Label>
         </div>
         
-        <div className="flex items-center space-x-2 w-full cursor-pointer"
-             onClick={() => handleVoiceChange('female')}>
+        <div 
+          className="flex items-center space-x-2 w-full cursor-pointer p-2 rounded hover:bg-jarvis-muted/20"
+          onClick={() => handleVoiceChange('female')}
+        >
           <RadioGroupItem value="female" id="female-voice" />
           <Label htmlFor="female-voice" className="text-sm cursor-pointer flex-1">
             Female Voice (F.R.I.D.A.Y)

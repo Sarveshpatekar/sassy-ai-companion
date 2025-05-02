@@ -1,11 +1,13 @@
 
 import React from 'react';
-import { Cloud, CloudRain, Sun, Thermometer, Loader2 } from 'lucide-react';
+import { Cloud, CloudRain, Sun, CloudSun, CloudLightning, Thermometer, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+export type WeatherCondition = 'sunny' | 'cloudy' | 'rainy' | 'partly cloudy' | 'thunderstorm' | 'clear';
 
 interface WeatherCardProps {
   temperature: number;
-  condition: 'sunny' | 'cloudy' | 'rainy';
+  condition: WeatherCondition;
   location: string;
   className?: string;
   isLoading?: boolean;
@@ -21,11 +23,18 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
   const getWeatherIcon = () => {
     switch (condition) {
       case 'sunny':
+      case 'clear':
         return <Sun className="h-8 w-8 text-yellow-400" />;
       case 'cloudy':
         return <Cloud className="h-8 w-8 text-gray-300" />;
       case 'rainy':
         return <CloudRain className="h-8 w-8 text-blue-300" />;
+      case 'partly cloudy':
+        return <CloudSun className="h-8 w-8 text-gray-300" />;
+      case 'thunderstorm':
+        return <CloudLightning className="h-8 w-8 text-blue-300" />;
+      default:
+        return <Sun className="h-8 w-8 text-yellow-400" />;
     }
   };
 
