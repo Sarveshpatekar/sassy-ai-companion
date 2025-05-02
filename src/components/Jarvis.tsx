@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage, { ChatMessageProps, MessageType } from './ChatMessage';
@@ -36,7 +35,7 @@ const Jarvis: React.FC = () => {
     },
     {
       type: 'assistant',
-      content: "Hello, I'm Jarvis, your personal AI assistant. How may I assist you today?",
+      content: "Hello, I'm Friday, your personal AI assistant. How may I assist you today?",
       timestamp: new Date()
     }
   ]);
@@ -46,7 +45,7 @@ const Jarvis: React.FC = () => {
   const [newsData, setNewsData] = useState(getNewsData());
   const [tasks, setTasks] = useState<Task[]>(getInitialTasks());
   const [systemStatus, setSystemStatus] = useState(getSystemStatus());
-  const [voiceType, setVoiceType] = useState<VoiceType>('male');
+  const [voiceType, setVoiceType] = useState<VoiceType>('female');
   
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
