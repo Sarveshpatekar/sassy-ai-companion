@@ -55,7 +55,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
       <input
         ref={inputRef}
         type="text"
-        placeholder={isListening ? "Listening..." : "Type your message..."}
+        placeholder={isListening ? "Listening..." : "Ask anything or enter a prompt..."}
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         className="jarvis-input"
