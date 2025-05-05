@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage, { ChatMessageProps, MessageType } from './ChatMessage';
@@ -10,6 +9,7 @@ import TasksCard, { Task } from './TasksCard';
 import SystemStatus from './SystemStatus';
 import ShareButton from './ShareButton';
 import VoiceSelector, { VoiceType } from './VoiceSelector';
+import WebScraper from './WebScraper';
 import { 
   getWeatherData, 
   getNewsData, 
@@ -205,6 +205,25 @@ const Jarvis: React.FC = () => {
     }]);
   };
   
+  // Handle scraped data
+  const handleScrapedData = (data: string) => {
+    setMessages(prev => [...prev, {
+      type: 'system',
+      content: 'Web content scraped successfully. Now processing the data...',
+      timestamp: new Date()
+    }]);
+    
+    // Basic extraction of page title as an example
+    const titleMatch = data.match(/<title[^>]*>(.*?)<\/title>/i);
+    const pageTitle = titleMatch ? titleMatch[1] : 'No title found';
+    
+    setMessages(prev => [...prev, {
+      type: 'assistant',
+      content: `I've analyzed the website. The page title is: "${pageTitle}"`,
+      timestamp: new Date()
+    }]);
+  };
+  
   return (
     <div className="flex flex-col h-screen bg-jarvis-dark text-white relative overflow-hidden">
       {/* Background gradient */}
@@ -269,6 +288,9 @@ const Jarvis: React.FC = () => {
               currentVoice={voiceType}
               onVoiceChange={handleVoiceChange}
             />
+            
+            {/* Web Scraper Component */}
+            <WebScraper onDataReceived={handleScrapedData} />
             
             <TasksCard 
               tasks={tasks}
