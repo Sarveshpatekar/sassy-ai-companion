@@ -285,9 +285,20 @@ const Jarvis: React.FC = () => {
       }]);
     } catch (error) {
       console.error('Error analyzing scraped data:', error);
+      // Fix: Define a local pageTitle variable here since titleMatch is not in scope
+      let errorPageTitle = 'No title found';
+      try {
+        const errorTitleMatch = data.match(/<title[^>]*>(.*?)<\/title>/i);
+        if (errorTitleMatch && errorTitleMatch[1]) {
+          errorPageTitle = errorTitleMatch[1];
+        }
+      } catch (e) {
+        console.error('Error extracting title in error handler:', e);
+      }
+      
       setMessages(prev => [...prev, {
         type: 'assistant',
-        content: `I've scraped the website, but I'm having trouble analyzing all the content. I was able to retrieve the page title: "${titleMatch ? titleMatch[1] : 'No title found'}"`,
+        content: `I've scraped the website, but I'm having trouble analyzing all the content. I was able to retrieve the page title: "${errorPageTitle}"`,
         timestamp: new Date()
       }]);
     }
