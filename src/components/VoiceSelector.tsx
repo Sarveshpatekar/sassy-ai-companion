@@ -44,7 +44,7 @@ const VoiceSelector: React.FC<VoiceSelectorProps> = ({
         >
           <RadioGroupItem value="male" id="male-voice" />
           <Label htmlFor="male-voice" className="text-sm cursor-pointer flex-1">
-            Male Voice (J.A.R.V.I.S)
+            Deep Voice (Jarvis)
           </Label>
         </div>
         
@@ -54,7 +54,7 @@ const VoiceSelector: React.FC<VoiceSelectorProps> = ({
         >
           <RadioGroupItem value="female" id="female-voice" />
           <Label htmlFor="female-voice" className="text-sm cursor-pointer flex-1">
-            Female Voice (F.R.I.D.A.Y)
+            Soft Voice (Jarvis)
           </Label>
         </div>
       </RadioGroup>

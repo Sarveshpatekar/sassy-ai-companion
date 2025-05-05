@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage, { ChatMessageProps, MessageType } from './ChatMessage';
@@ -35,7 +36,7 @@ const Jarvis: React.FC = () => {
     },
     {
       type: 'assistant',
-      content: "Hello, I'm Friday, your personal AI assistant. How may I assist you today?",
+      content: "Hello, I'm Jarvis, your personal AI assistant. How may I assist you today?",
       timestamp: new Date()
     }
   ]);
@@ -194,8 +195,8 @@ const Jarvis: React.FC = () => {
     setVoiceType(newVoice);
     
     // Let the user know about the voice change
-    const assistantName = newVoice === 'male' ? 'Jarvis' : 'Friday';
-    const message = `Voice switched to ${assistantName}. How may I assist you?`;
+    const voiceDescription = newVoice === 'male' ? 'Deep' : 'Soft';
+    const message = `Voice switched to ${voiceDescription} voice. How may I assist you?`;
     
     setMessages(prev => [...prev, {
       type: 'assistant',
@@ -207,15 +208,15 @@ const Jarvis: React.FC = () => {
   return (
     <div className="flex flex-col h-screen bg-jarvis-dark text-white relative overflow-hidden">
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-mesh-gradient z-0"></div>
+      <div className="absolute inset-0 bg-mesh-gradient z-0 opacity-90"></div>
       
       {/* Header */}
       <header className="relative z-10 flex items-center justify-between p-4 border-b border-jarvis-muted/30 bg-jarvis-dark/80 backdrop-blur-sm">
         <div className="flex items-center">
-          <ArcReactor className="mr-3" />
+          <ArcReactor className="mr-3" pulsate={true} />
           <div>
             <h1 className="text-xl font-bold jarvis-gradient-text">
-              {voiceType === 'male' ? 'J.A.R.V.I.S.' : 'F.R.I.D.A.Y.'}
+              J.A.R.V.I.S.
             </h1>
             <p className="text-xs text-gray-400">Just A Rather Very Intelligent System</p>
           </div>
