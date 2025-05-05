@@ -20,7 +20,7 @@ const VoiceSelector: React.FC<VoiceSelectorProps> = ({
 }) => {
   // Make sure we're directly calling onVoiceChange
   const handleVoiceChange = (value: string) => {
-    if (value === 'male' || value === 'female') {
+    if (value === 'female') {
       console.log("Voice changed to:", value);
       onVoiceChange(value as VoiceType);
     }
@@ -38,16 +38,6 @@ const VoiceSelector: React.FC<VoiceSelectorProps> = ({
         onValueChange={handleVoiceChange}
         className="flex flex-col space-y-3"
       >
-        <div 
-          className="flex items-center space-x-2 w-full cursor-pointer p-2 rounded hover:bg-jarvis-muted/20 transition-colors" 
-          onClick={() => handleVoiceChange('male')}
-        >
-          <RadioGroupItem value="male" id="male-voice" />
-          <Label htmlFor="male-voice" className="text-sm cursor-pointer flex-1">
-            Deep Voice (Jarvis)
-          </Label>
-        </div>
-        
         <div 
           className="flex items-center space-x-2 w-full cursor-pointer p-2 rounded hover:bg-jarvis-muted/20 transition-colors"
           onClick={() => handleVoiceChange('female')}

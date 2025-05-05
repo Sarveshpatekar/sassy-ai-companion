@@ -46,6 +46,7 @@ const Jarvis: React.FC = () => {
   const [newsData, setNewsData] = useState(getNewsData());
   const [tasks, setTasks] = useState<Task[]>(getInitialTasks());
   const [systemStatus, setSystemStatus] = useState(getSystemStatus());
+  // Always set female voice as default
   const [voiceType, setVoiceType] = useState<VoiceType>('female');
   
   // Refs
@@ -195,8 +196,7 @@ const Jarvis: React.FC = () => {
     setVoiceType(newVoice);
     
     // Let the user know about the voice change
-    const voiceDescription = newVoice === 'male' ? 'Deep' : 'Soft';
-    const message = `Voice switched to ${voiceDescription} voice. How may I assist you?`;
+    const message = `Voice updated. How may I assist you?`;
     
     setMessages(prev => [...prev, {
       type: 'assistant',
