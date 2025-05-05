@@ -125,6 +125,35 @@ const Jarvis: React.FC = () => {
     }]);
     
     try {
+      // Check for web scraping requests
+      if (text.toLowerCase().includes('scrape') && text.toLowerCase().includes('website')) {
+        const urlMatch = text.match(/https?:\/\/[^\s]+/);
+        if (urlMatch) {
+          const extractedUrl = urlMatch[0];
+          // Remove loading message
+          setMessages(prev => prev.filter(msg => msg.type !== 'loading'));
+          
+          // Add assistant response acknowledging the scrape request
+          setMessages(prev => [...prev, {
+            type: 'assistant',
+            content: `I'll scrape the website ${extractedUrl} for you right away.`,
+            timestamp: new Date()
+          }]);
+          
+          // Trigger web scraping programmatically 
+          // (This would need to be implemented in WebScraper with a ref)
+          // For now, we'll just guide the user
+          setMessages(prev => [...prev, {
+            type: 'system',
+            content: `Please use the Web Scraper panel on the right to scrape ${extractedUrl}`,
+            timestamp: new Date()
+          }]);
+          
+          setIsProcessing(false);
+          return;
+        }
+      }
+      
       // Get AI response
       const response = await getJarvisResponse(text);
       
@@ -213,15 +242,55 @@ const Jarvis: React.FC = () => {
       timestamp: new Date()
     }]);
     
-    // Basic extraction of page title as an example
-    const titleMatch = data.match(/<title[^>]*>(.*?)<\/title>/i);
-    const pageTitle = titleMatch ? titleMatch[1] : 'No title found';
-    
-    setMessages(prev => [...prev, {
-      type: 'assistant',
-      content: `I've analyzed the website. The page title is: "${pageTitle}"`,
-      timestamp: new Date()
-    }]);
+    try {
+      // Extract meaningful information
+      const titleMatch = data.match(/<title[^>]*>(.*?)<\/title>/i);
+      const pageTitle = titleMatch ? titleMatch[1] : 'No title found';
+      
+      // Extract meta description
+      const descriptionMatch = data.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i);
+      const description = descriptionMatch ? descriptionMatch[1] : '';
+      
+      // Extract main headings
+      const h1Tags = data.match(/<h1[^>]*>(.*?)<\/h1>/gi)?.map(tag => {
+        const content = tag.replace(/<[^>]*>/g, '').trim();
+        return content !== '' ? content : null;
+      }).filter(Boolean);
+      
+      // Construct AI response
+      let analysis = `I've analyzed the website. Here's what I found:\n\n`;
+      analysis += `📄 **Page Title:** ${pageTitle}\n\n`;
+      
+      if (description) {
+        analysis += `📝 **Description:** ${description}\n\n`;
+      }
+      
+      if (h1Tags && h1Tags.length > 0) {
+        analysis += `📋 **Main Headings:**\n`;
+        h1Tags.slice(0, 3).forEach((heading, i) => {
+          analysis += `${i + 1}. ${heading}\n`;
+        });
+        if (h1Tags.length > 3) {
+          analysis += `...and ${h1Tags.length - 3} more headings\n`;
+        }
+        analysis += '\n';
+      }
+      
+      analysis += `Would you like me to extract specific information from this website?`;
+      
+      setMessages(prev => [...prev, {
+        type: 'assistant',
+        content: analysis,
+        timestamp: new Date()
+      }]);
+    } catch (error) {
+      console.error('Error analyzing scraped data:', error);
+      setMessages(prev => [...prev, {
+        type: 'assistant',
+        content: `I've scraped the website, but I'm having trouble analyzing all the content. I was able to retrieve the page title: "${titleMatch ? titleMatch[1] : 'No title found'}"`,
+        timestamp: new Date()
+      }]);
+    }
   };
   
   return (

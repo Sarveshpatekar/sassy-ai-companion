@@ -63,6 +63,11 @@ const WebScraper: React.FC<WebScraperProps> = ({
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             className="bg-jarvis-dark border-jarvis-muted/50 text-white"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && url) {
+                handleScrape();
+              }
+            }}
           />
           <Button 
             onClick={handleScrape} 
