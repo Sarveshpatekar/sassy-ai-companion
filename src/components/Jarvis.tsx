@@ -213,7 +213,7 @@ const Jarvis: React.FC = () => {
       {/* Header */}
       <header className="relative z-10 flex items-center justify-between p-4 border-b border-jarvis-muted/30 bg-jarvis-dark/80 backdrop-blur-sm">
         <div className="flex items-center">
-          <ArcReactor className="mr-3" pulsate={true} />
+          <ArcReactor className="mr-3" pulsing={true} />
           <div>
             <h1 className="text-xl font-bold jarvis-gradient-text">
               J.A.R.V.I.S.
