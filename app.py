@@ -7,8 +7,9 @@ import re
 import logging
 import json
 import os
-# Import for OpenAI integration
-import openai
+import time
+# Import for Hugging Face transformers
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -18,97 +19,76 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all domains on all routes
 
-# Set OpenAI API key - in production, this should be stored as an environment variable
-# Replace with your actual API key or set as environment variable
-openai.api_key = os.environ.get("OPENAI_API_KEY", "your-openai-api-key")
+# Global model variables
+model = None
+tokenizer = None
+text_generation = None
+
+# Model config
+MODEL_NAME = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"  # Default model, small enough to run on most hardware
+# Other options include:
+# - "mistralai/Mistral-7B-Instruct-v0.2" (requires more RAM)
+# - "microsoft/phi-2" (smaller model)
+# - "openchat/openchat-3.5-0106" (requires more RAM)
+
+def initialize_model():
+    """Initialize the language model and tokenizer"""
+    global model, tokenizer, text_generation
+    
+    if model is None:
+        try:
+            logger.info(f"Loading model: {MODEL_NAME}")
+            
+            # Load model and tokenizer
+            tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+            model = AutoModelForCausalLM.from_pretrained(
+                MODEL_NAME,
+                device_map="auto",  # Use CUDA if available
+                low_cpu_mem_usage=True,
+                torch_dtype="auto"
+            )
+            
+            # Create a text generation pipeline
+            text_generation = pipeline(
+                "text-generation",
+                model=model,
+                tokenizer=tokenizer,
+                max_length=512
+            )
+            
+            logger.info("Model loaded successfully")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to load model: {str(e)}")
+            return False
+    return True
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Simple endpoint to check if the API is running"""
-    return jsonify({"status": "healthy", "message": "Jarvis AI backend is operational"})
+    model_loaded = model is not None
+    return jsonify({
+        "status": "healthy", 
+        "message": "Jarvis AI backend is operational",
+        "model": {
+            "loaded": model_loaded,
+            "name": MODEL_NAME if model_loaded else None
+        }
+    })
 
 @app.route('/api/scrape', methods=['POST'])
 def scrape_website():
     """Endpoint to scrape a website and extract useful information"""
-    data = request.json
-    url = data.get('url')
-    
-    if not url:
-        return jsonify({"error": "No URL provided"}), 400
-    
-    try:
-        response = requests.get(url, timeout=10)
-        if response.status_code != 200:
-            return jsonify({"error": f"Failed to fetch website: HTTP {response.status_code}"}), 400
-        
-        html_content = response.text
-        soup = BeautifulSoup(html_content, 'html.parser')
-        
-        # Extract title
-        title = soup.title.string if soup.title else "No title found"
-        
-        # Extract meta description
-        meta_desc = ""
-        meta_tag = soup.find("meta", attrs={"name": "description"})
-        if meta_tag and "content" in meta_tag.attrs:
-            meta_desc = meta_tag["content"]
-        
-        # Extract h1 headings
-        h1_tags = [h1.get_text().strip() for h1 in soup.find_all('h1') if h1.get_text().strip()]
-        
-        # Extract main text content (first few paragraphs)
-        paragraphs = [p.get_text().strip() for p in soup.find_all('p')[:5] if p.get_text().strip()]
-        
-        # Extract links
-        links = [{"text": a.get_text().strip(), "url": a["href"]} 
-                for a in soup.find_all('a', href=True)
-                if a.get_text().strip() and a["href"].startswith(('http', 'https'))][:10]
-        
-        return jsonify({
-            "title": title,
-            "description": meta_desc,
-            "headings": h1_tags[:5],  # Limit to 5 headings
-            "content": paragraphs,
-            "links": links
-        })
-    
-    except Exception as e:
-        logger.error(f"Error scraping {url}: {str(e)}")
-        return jsonify({"error": f"Failed to scrape website: {str(e)}"}), 500
+    # ... keep existing code (website scraping functionality)
 
 @app.route('/api/analyze-text', methods=['POST'])
 def analyze_text():
     """Endpoint to analyze text for sentiment, entities, etc."""
-    data = request.json
-    text = data.get('text', '')
-    
-    if not text:
-        return jsonify({"error": "No text provided"}), 400
-    
-    try:
-        # Placeholder for text analysis functionality
-        # In a real implementation, you would integrate with NLP libraries
-        # like spaCy, NLTK, or API services like Google NLP, etc.
-        
-        # Mock response for demonstration
-        result = {
-            "analysis": {
-                "sentiment": "positive",
-                "length": len(text),
-                "words": len(text.split()),
-                "summary": text[:100] + "..." if len(text) > 100 else text
-            }
-        }
-        
-        return jsonify(result)
-        
-    except Exception as e:
-        logger.error(f"Error analyzing text: {str(e)}")
-        return jsonify({"error": f"Failed to analyze text: {str(e)}"}), 500
+    # ... keep existing code (text analysis functionality)
 
 @app.route('/api/chat', methods=['POST'])
 def chat_endpoint():
-    """Endpoint to handle chat interactions with Jarvis AI using OpenAI"""
+    """Endpoint to handle chat interactions with Jarvis AI using local language model"""
     data = request.json
     message = data.get('message', '')
     
@@ -116,10 +96,10 @@ def chat_endpoint():
         return jsonify({"error": "No message provided"}), 400
     
     try:
-        # Check if OpenAI API key is set
-        if openai.api_key == "your-openai-api-key" or not openai.api_key:
-            logger.warning("OpenAI API key not set. Using fallback responses.")
-            # Fallback responses if API key is not set
+        # Initialize model if not already loaded
+        if not initialize_model():
+            # Fallback responses if model fails to load
+            logger.warning("Model not loaded. Using fallback responses.")
             if "weather" in message.lower():
                 response = "The weather is currently sunny with a temperature of 72°F."
             elif "news" in message.lower():
@@ -131,18 +111,31 @@ def chat_endpoint():
                 
             return jsonify({"response": response})
         
-        # Use OpenAI to generate a response
-        completion = openai.chat.completions.create(
-            model="gpt-4o-mini",  # You can use other models like "gpt-3.5-turbo"
-            messages=[
-                {"role": "system", "content": "You are J.A.R.V.I.S (Just A Rather Very Intelligent System), a helpful and sophisticated AI assistant. Respond in a polite, concise, and informative manner."},
-                {"role": "user", "content": message}
-            ],
-            max_tokens=300,
-            temperature=0.7
+        # Prepare prompt for the model
+        system_message = "You are J.A.R.V.I.S (Just A Rather Very Intelligent System), a helpful and sophisticated AI assistant. Respond in a polite, concise, and informative manner."
+        prompt = f"{system_message}\n\nUser: {message}\n\nJ.A.R.V.I.S:"
+        
+        # Generate response using the local model
+        start_time = time.time()
+        logger.info(f"Generating response for: {message}")
+        
+        generation = text_generation(
+            prompt,
+            do_sample=True,
+            temperature=0.7,
+            max_new_tokens=300,
+            top_p=0.95,
+            repetition_penalty=1.1
         )
         
-        response = completion.choices[0].message.content
+        # Extract the generated text from the model's output
+        generated_text = generation[0]["generated_text"]
+        
+        # Clean up the response to only include the assistant's reply
+        response = generated_text.split("J.A.R.V.I.S:")[-1].strip()
+        
+        elapsed_time = time.time() - start_time
+        logger.info(f"Response generated in {elapsed_time:.2f} seconds")
         
         return jsonify({"response": response})
         
@@ -150,5 +143,40 @@ def chat_endpoint():
         logger.error(f"Error in chat endpoint: {str(e)}")
         return jsonify({"error": f"Failed to process message: {str(e)}"}), 500
 
+# This route allows changing the model at runtime
+@app.route('/api/change-model', methods=['POST'])
+def change_model():
+    """Endpoint to change the language model at runtime"""
+    global MODEL_NAME, model, tokenizer, text_generation
+    
+    data = request.json
+    new_model = data.get('model')
+    
+    if not new_model:
+        return jsonify({"error": "No model name provided"}), 400
+    
+    try:
+        # Clear current model to free memory
+        model = None
+        tokenizer = None
+        text_generation = None
+        
+        # Update model name
+        MODEL_NAME = new_model
+        
+        # Initialize the new model
+        success = initialize_model()
+        
+        if success:
+            return jsonify({"success": True, "message": f"Model changed to {MODEL_NAME}"})
+        else:
+            return jsonify({"success": False, "error": f"Failed to load model {MODEL_NAME}"}), 500
+        
+    except Exception as e:
+        logger.error(f"Error changing model: {str(e)}")
+        return jsonify({"error": f"Failed to change model: {str(e)}"}), 500
+
 if __name__ == '__main__':
+    # Initialize model at startup
+    initialize_model()
     app.run(debug=True, host='0.0.0.0', port=5000)
