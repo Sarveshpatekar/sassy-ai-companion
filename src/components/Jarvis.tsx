@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage, { ChatMessageProps, MessageType } from './ChatMessage';
@@ -9,13 +10,12 @@ import TasksCard, { Task } from './TasksCard';
 import SystemStatus from './SystemStatus';
 import ShareButton from './ShareButton';
 import VoiceSelector, { VoiceType } from './VoiceSelector';
-import WebScraper from './WebScraper';
+import ApiService from '@/services/apiService';
 import { 
   getWeatherData, 
   getNewsData, 
   getInitialTasks, 
-  getSystemStatus,
-  getJarvisResponse 
+  getSystemStatus
 } from '@/utils/mockData';
 import {
   speak, 
@@ -48,12 +48,38 @@ const Jarvis: React.FC = () => {
   const [systemStatus, setSystemStatus] = useState(getSystemStatus());
   // Always set female voice as default
   const [voiceType, setVoiceType] = useState<VoiceType>('female');
+  const [isBackendConnected, setIsBackendConnected] = useState(false);
   
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const speechRecognitionRef = useRef<SpeechRecognition | null>(null);
   
   // Effects
+  // Check if backend is running
+  useEffect(() => {
+    const checkBackendConnection = async () => {
+      try {
+        await ApiService.checkHealth();
+        setIsBackendConnected(true);
+        setMessages(prev => [...prev, {
+          type: 'system',
+          content: 'Connected to Jarvis AI backend service.',
+          timestamp: new Date()
+        }]);
+      } catch (error) {
+        console.error('Backend connection failed:', error);
+        setIsBackendConnected(false);
+        setMessages(prev => [...prev, {
+          type: 'system',
+          content: 'Running in offline mode. Backend AI services unavailable.',
+          timestamp: new Date()
+        }]);
+      }
+    };
+    
+    checkBackendConnection();
+  }, []);
+  
   // Initialize speech recognition
   useEffect(() => {
     speechRecognitionRef.current = initSpeechRecognition(
@@ -117,7 +143,6 @@ const Jarvis: React.FC = () => {
     setIsProcessing(true);
     
     // Add loading message
-    const loadingId = uuidv4();
     setMessages(prev => [...prev, { 
       type: 'loading', 
       content: '', 
@@ -125,37 +150,20 @@ const Jarvis: React.FC = () => {
     }]);
     
     try {
-      // Check for web scraping requests
-      if (text.toLowerCase().includes('scrape') && text.toLowerCase().includes('website')) {
-        const urlMatch = text.match(/https?:\/\/[^\s]+/);
-        if (urlMatch) {
-          const extractedUrl = urlMatch[0];
-          // Remove loading message
-          setMessages(prev => prev.filter(msg => msg.type !== 'loading'));
-          
-          // Add assistant response acknowledging the scrape request
-          setMessages(prev => [...prev, {
-            type: 'assistant',
-            content: `I'll scrape the website ${extractedUrl} for you right away.`,
-            timestamp: new Date()
-          }]);
-          
-          // Trigger web scraping programmatically 
-          // (This would need to be implemented in WebScraper with a ref)
-          // For now, we'll just guide the user
-          setMessages(prev => [...prev, {
-            type: 'system',
-            content: `Please use the Web Scraper panel on the right to scrape ${extractedUrl}`,
-            timestamp: new Date()
-          }]);
-          
-          setIsProcessing(false);
-          return;
-        }
-      }
+      let response: string;
       
-      // Get AI response
-      const response = await getJarvisResponse(text);
+      if (isBackendConnected) {
+        // Use backend for response if connected
+        const result = await ApiService.sendChatMessage(text);
+        response = result.response;
+      } else {
+        // Fall back to mock data if backend is not available
+        response = await new Promise(resolve => {
+          setTimeout(() => {
+            resolve(`I processed your message: "${text}" but I'm currently operating in offline mode.`);
+          }, 1000);
+        });
+      }
       
       // Update messages - replace loading with response
       setMessages(prev => prev.filter(msg => msg.type !== 'loading').concat({
@@ -234,73 +242,41 @@ const Jarvis: React.FC = () => {
     }]);
   };
   
-  // Handle scraped data
-  const handleScrapedData = (data: string) => {
+  const handleTextAnalysis = async (text: string) => {
+    if (!isBackendConnected) {
+      setMessages(prev => [...prev, {
+        type: 'system',
+        content: "Text analysis requires connection to backend services.",
+        timestamp: new Date()
+      }]);
+      return;
+    }
+    
+    setIsProcessing(true);
     setMessages(prev => [...prev, {
       type: 'system',
-      content: 'Web content scraped successfully. Now processing the data...',
+      content: "Analyzing text...",
       timestamp: new Date()
     }]);
     
     try {
-      // Extract meaningful information
-      const titleMatch = data.match(/<title[^>]*>(.*?)<\/title>/i);
-      const pageTitle = titleMatch ? titleMatch[1] : 'No title found';
-      
-      // Extract meta description
-      const descriptionMatch = data.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i);
-      const description = descriptionMatch ? descriptionMatch[1] : '';
-      
-      // Extract main headings
-      const h1Tags = data.match(/<h1[^>]*>(.*?)<\/h1>/gi)?.map(tag => {
-        const content = tag.replace(/<[^>]*>/g, '').trim();
-        return content !== '' ? content : null;
-      }).filter(Boolean);
-      
-      // Construct AI response
-      let analysis = `I've analyzed the website. Here's what I found:\n\n`;
-      analysis += `📄 **Page Title:** ${pageTitle}\n\n`;
-      
-      if (description) {
-        analysis += `📝 **Description:** ${description}\n\n`;
-      }
-      
-      if (h1Tags && h1Tags.length > 0) {
-        analysis += `📋 **Main Headings:**\n`;
-        h1Tags.slice(0, 3).forEach((heading, i) => {
-          analysis += `${i + 1}. ${heading}\n`;
-        });
-        if (h1Tags.length > 3) {
-          analysis += `...and ${h1Tags.length - 3} more headings\n`;
-        }
-        analysis += '\n';
-      }
-      
-      analysis += `Would you like me to extract specific information from this website?`;
+      const result = await ApiService.analyzeText(text);
+      const { sentiment, length, words, summary } = result.analysis;
       
       setMessages(prev => [...prev, {
         type: 'assistant',
-        content: analysis,
+        content: `Text Analysis:\n\n• Sentiment: ${sentiment}\n• Length: ${length} characters\n• Word count: ${words}\n• Summary: ${summary}`,
         timestamp: new Date()
       }]);
     } catch (error) {
-      console.error('Error analyzing scraped data:', error);
-      // Fix: Define a local pageTitle variable here since titleMatch is not in scope
-      let errorPageTitle = 'No title found';
-      try {
-        const errorTitleMatch = data.match(/<title[^>]*>(.*?)<\/title>/i);
-        if (errorTitleMatch && errorTitleMatch[1]) {
-          errorPageTitle = errorTitleMatch[1];
-        }
-      } catch (e) {
-        console.error('Error extracting title in error handler:', e);
-      }
-      
+      console.error('Text analysis error:', error);
       setMessages(prev => [...prev, {
         type: 'assistant',
-        content: `I've scraped the website, but I'm having trouble analyzing all the content. I was able to retrieve the page title: "${errorPageTitle}"`,
+        content: "I encountered an error while analyzing the text. Please try again later.",
         timestamp: new Date()
       }]);
+    } finally {
+      setIsProcessing(false);
     }
   };
   
@@ -320,6 +296,12 @@ const Jarvis: React.FC = () => {
             <p className="text-xs text-gray-400">Just A Rather Very Intelligent System</p>
           </div>
         </div>
+        {isBackendConnected && (
+          <div className="flex items-center">
+            <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+            <span className="text-xs text-gray-400">Backend Connected</span>
+          </div>
+        )}
       </header>
       
       {/* Main content */}
@@ -368,9 +350,6 @@ const Jarvis: React.FC = () => {
               currentVoice={voiceType}
               onVoiceChange={handleVoiceChange}
             />
-            
-            {/* Web Scraper Component */}
-            <WebScraper onDataReceived={handleScrapedData} />
             
             <TasksCard 
               tasks={tasks}
