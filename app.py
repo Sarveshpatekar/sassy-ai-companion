@@ -6,6 +6,9 @@ from bs4 import BeautifulSoup
 import re
 import logging
 import json
+import os
+# Import for OpenAI integration
+import openai
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -14,6 +17,10 @@ logger = logging.getLogger(__name__)
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all domains on all routes
+
+# Set OpenAI API key - in production, this should be stored as an environment variable
+# Replace with your actual API key or set as environment variable
+openai.api_key = os.environ.get("OPENAI_API_KEY", "your-openai-api-key")
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -101,7 +108,7 @@ def analyze_text():
 
 @app.route('/api/chat', methods=['POST'])
 def chat_endpoint():
-    """Endpoint to handle chat interactions with Jarvis AI"""
+    """Endpoint to handle chat interactions with Jarvis AI using OpenAI"""
     data = request.json
     message = data.get('message', '')
     
@@ -109,18 +116,34 @@ def chat_endpoint():
         return jsonify({"error": "No message provided"}), 400
     
     try:
-        # This would typically connect to an LLM service
-        # For now, we'll simulate a simple response
+        # Check if OpenAI API key is set
+        if openai.api_key == "your-openai-api-key" or not openai.api_key:
+            logger.warning("OpenAI API key not set. Using fallback responses.")
+            # Fallback responses if API key is not set
+            if "weather" in message.lower():
+                response = "The weather is currently sunny with a temperature of 72°F."
+            elif "news" in message.lower():
+                response = "Today's top headline: Scientists make breakthrough in quantum computing."
+            elif "scrape" in message.lower():
+                response = "I can scrape websites for you through my API. Please provide a URL."
+            else:
+                response = f"I received your message: '{message}'. How can I assist you further?"
+                
+            return jsonify({"response": response})
         
-        if "weather" in message.lower():
-            response = "The weather is currently sunny with a temperature of 72°F."
-        elif "news" in message.lower():
-            response = "Today's top headline: Scientists make breakthrough in quantum computing."
-        elif "scrape" in message.lower():
-            response = "I can scrape websites for you through my API. Please provide a URL."
-        else:
-            response = f"I received your message: '{message}'. How can I assist you further?"
-            
+        # Use OpenAI to generate a response
+        completion = openai.chat.completions.create(
+            model="gpt-4o-mini",  # You can use other models like "gpt-3.5-turbo"
+            messages=[
+                {"role": "system", "content": "You are J.A.R.V.I.S (Just A Rather Very Intelligent System), a helpful and sophisticated AI assistant. Respond in a polite, concise, and informative manner."},
+                {"role": "user", "content": message}
+            ],
+            max_tokens=300,
+            temperature=0.7
+        )
+        
+        response = completion.choices[0].message.content
+        
         return jsonify({"response": response})
         
     except Exception as e:
