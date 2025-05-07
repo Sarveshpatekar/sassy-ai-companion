@@ -35,32 +35,57 @@ export interface ModelChangeResponse {
 export const ApiService = {
   // Health check to see if the backend is running
   checkHealth: async (): Promise<{ status: string; message: string; model?: {loaded: boolean; name: string} }> => {
-    const response = await axios.get(`${API_BASE_URL}/health`);
-    return response.data;
+    try {
+      const response = await axios.get(`${API_BASE_URL}/health`);
+      return response.data;
+    } catch (error) {
+      console.error('Health check failed:', error);
+      throw error;
+    }
   },
   
   // Web scraping
   scrapeWebsite: async (url: string): Promise<ScrapeResponse> => {
-    const response = await axios.post(`${API_BASE_URL}/scrape`, { url });
-    return response.data;
+    try {
+      const response = await axios.post(`${API_BASE_URL}/scrape`, { url });
+      return response.data;
+    } catch (error) {
+      console.error('Scrape failed:', error);
+      throw error;
+    }
   },
   
   // Text analysis
   analyzeText: async (text: string): Promise<TextAnalysisResponse> => {
-    const response = await axios.post(`${API_BASE_URL}/analyze-text`, { text });
-    return response.data;
+    try {
+      const response = await axios.post(`${API_BASE_URL}/analyze-text`, { text });
+      return response.data;
+    } catch (error) {
+      console.error('Text analysis failed:', error);
+      throw error;
+    }
   },
   
   // Chat with Jarvis AI
   sendChatMessage: async (message: string): Promise<ChatResponse> => {
-    const response = await axios.post(`${API_BASE_URL}/chat`, { message });
-    return response.data;
+    try {
+      const response = await axios.post(`${API_BASE_URL}/chat`, { message });
+      return response.data;
+    } catch (error) {
+      console.error('Chat message failed:', error);
+      throw error;
+    }
   },
   
   // Change the AI model
   changeModel: async (model: string): Promise<ModelChangeResponse> => {
-    const response = await axios.post(`${API_BASE_URL}/change-model`, { model });
-    return response.data;
+    try {
+      const response = await axios.post(`${API_BASE_URL}/change-model`, { model });
+      return response.data;
+    } catch (error) {
+      console.error('Model change failed:', error);
+      throw error;
+    }
   }
 };
 

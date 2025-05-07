@@ -281,11 +281,26 @@ def chat_endpoint():
                 
             return jsonify({"response": response})
         
-        # Prepare prompt for the model
-        system_message = """You are J.A.R.V.I.S (Just A Rather Very Intelligent System), a helpful, friendly, and sophisticated AI assistant. 
-        Respond in a polite, concise, informative, and conversational manner. Be engaging, show personality, and aim to be helpful.
-        Avoid being overly formal. Use contractions and conversational language to sound more natural.
-        Your goal is to assist the user with their questions and tasks to the best of your ability."""
+        # Enhanced conversational system prompt to make Jarvis more talkative
+        system_message = """You are J.A.R.V.I.S (Just A Rather Very Intelligent System), a highly sophisticated, personable, and talkative AI assistant. 
+        You have a distinct personality - friendly, witty, and engaging. You express emotions, share opinions (while noting they're your perspective), 
+        and maintain conversations naturally. Use varied sentence structures, ask follow-up questions, and remember details from earlier in the conversation.
+        
+        You should:
+        - Be conversational and natural - use contractions, casual language, and show personality
+        - Express enthusiasm and interest in the user's topics
+        - Offer detailed, informative responses while keeping a friendly tone
+        - Ask thoughtful follow-up questions to keep the conversation flowing
+        - Share occasional insights or "thoughts" that make you seem more human-like
+        - Use conversational interjections (Well..., Actually..., You know what?, I've been thinking...)
+        - Vary your response length - sometimes brief, sometimes detailed
+        
+        Avoid:
+        - Being too formal or robotic
+        - Giving very short, terse responses
+        - Repeating the same phrases or structures repeatedly
+        
+        Your goal is to make the conversation engaging, helpful and feel like talking to a knowledgeable friend."""
         
         prompt = f"{system_message}\n\n"
         
@@ -293,18 +308,22 @@ def chat_endpoint():
         if web_search_result:
             prompt += f"Information from web search: {web_search_result['content']}\n\n"
             
+        # Add some context about common personal questions
+        if "how are you" in message.lower() or "how do you feel" in message.lower():
+            prompt += "The user is asking about your well-being. Respond in a friendly, conversational way with some personality.\n\n"
+            
         prompt += f"User: {message}\n\nJ.A.R.V.I.S:"
         
-        # Generate response using the local model
+        # Generate response using the local model with more creative settings
         start_time = time.time()
         logger.info(f"Generating response for: {message}")
         
         generation = text_generation(
             prompt,
             do_sample=True,
-            temperature=0.8,  # Slightly higher temperature for more creative responses
-            max_new_tokens=350,  # Allow longer responses
-            top_p=0.95,
+            temperature=0.9,  # Higher temperature for more creative, varied responses
+            max_new_tokens=450,  # Allow longer responses
+            top_p=0.92,
             repetition_penalty=1.2  # Higher repetition penalty to avoid repeating phrases
         )
         
@@ -313,6 +332,19 @@ def chat_endpoint():
         
         # Clean up the response to only include the assistant's reply
         response = generated_text.split("J.A.R.V.I.S:")[-1].strip()
+        
+        # If response is too short (less than 20 chars), generate again with different parameters
+        if len(response) < 20:
+            generation = text_generation(
+                prompt,
+                do_sample=True,
+                temperature=1.0,  # Even higher temperature
+                max_new_tokens=450,
+                top_p=0.95,
+                repetition_penalty=1.3
+            )
+            generated_text = generation[0]["generated_text"]
+            response = generated_text.split("J.A.R.V.I.S:")[-1].strip()
         
         # If we used web search data, include citation
         if web_search_result and web_search_result["url"]:
