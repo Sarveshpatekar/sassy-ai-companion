@@ -63,6 +63,53 @@ def initialize_model():
             return False
     return True
 
+def search_web(query):
+    """Search the web for information on a topic"""
+    try:
+        # Use Wikipedia API to search for information
+        search_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={query}&format=json"
+        response = requests.get(search_url)
+        data = response.json()
+        
+        if 'query' in data and 'search' in data['query'] and len(data['query']['search']) > 0:
+            # Get the first search result
+            page_title = data['query']['search'][0]['title']
+            
+            # Get the full page content
+            content_url = f"https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=&explaintext=&titles={page_title}&format=json"
+            content_response = requests.get(content_url)
+            content_data = content_response.json()
+            
+            # Extract the page content
+            pages = content_data['query']['pages']
+            page_id = list(pages.keys())[0]
+            
+            if 'extract' in pages[page_id]:
+                # Return the extracted content
+                return {
+                    "source": "Wikipedia",
+                    "title": page_title,
+                    "content": pages[page_id]['extract'],
+                    "url": f"https://en.wikipedia.org/wiki/{page_title.replace(' ', '_')}"
+                }
+        
+        # If Wikipedia search fails, try a web search
+        logger.info("No Wikipedia results, attempting general web search")
+        return {
+            "source": "Web",
+            "title": query,
+            "content": f"I searched for information about '{query}', but couldn't find specific details. Please ask a more specific question or try a different topic.",
+            "url": ""
+        }
+    except Exception as e:
+        logger.error(f"Web search error: {str(e)}")
+        return {
+            "source": "Error",
+            "title": "",
+            "content": f"I encountered an error while searching for information: {str(e)}",
+            "url": ""
+        }
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Simple endpoint to check if the API is running"""
@@ -79,12 +126,118 @@ def health_check():
 @app.route('/api/scrape', methods=['POST'])
 def scrape_website():
     """Endpoint to scrape a website and extract useful information"""
-    # ... keep existing code (website scraping functionality)
+    data = request.json
+    url = data.get('url', '')
+    
+    if not url:
+        return jsonify({"error": "No URL provided"}), 400
+    
+    try:
+        logger.info(f"Scraping website: {url}")
+        
+        # Make request to the website
+        response = requests.get(url, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        })
+        
+        if response.status_code != 200:
+            return jsonify({"error": f"Failed to fetch website. Status code: {response.status_code}"}), 400
+        
+        # Parse HTML content
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Extract title
+        title = soup.title.string if soup.title else ""
+        
+        # Extract description
+        meta_desc = soup.find('meta', attrs={'name': 'description'})
+        description = meta_desc['content'] if meta_desc else ""
+        
+        # Extract headings
+        headings = [h.get_text().strip() for h in soup.find_all(['h1', 'h2', 'h3']) if h.get_text().strip()]
+        
+        # Extract paragraphs
+        content = [p.get_text().strip() for p in soup.find_all('p') if p.get_text().strip()]
+        
+        # Extract links
+        links = []
+        for a in soup.find_all('a', href=True):
+            link_text = a.get_text().strip()
+            if link_text and len(link_text) > 3:  # Filter out very short link texts
+                link_url = a['href']
+                if not link_url.startswith('http'):
+                    # Convert relative URL to absolute
+                    link_url = requests.compat.urljoin(url, link_url)
+                links.append({"text": link_text, "url": link_url})
+        
+        # Limit the amount of data to return
+        max_headings = 10
+        max_paragraphs = 20
+        max_links = 15
+        
+        result = {
+            "title": title,
+            "description": description,
+            "headings": headings[:max_headings],
+            "content": content[:max_paragraphs],
+            "links": links[:max_links]
+        }
+        
+        logger.info(f"Successfully scraped website: {url}")
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Error scraping website: {str(e)}")
+        return jsonify({"error": f"Failed to scrape website: {str(e)}"}), 500
 
 @app.route('/api/analyze-text', methods=['POST'])
 def analyze_text():
     """Endpoint to analyze text for sentiment, entities, etc."""
-    # ... keep existing code (text analysis functionality)
+    data = request.json
+    text = data.get('text', '')
+    
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
+    
+    try:
+        # Calculate basic statistics
+        word_count = len(re.findall(r'\w+', text))
+        char_count = len(text)
+        
+        # Generate a summary (simple approach)
+        sentences = re.split(r'(?<=[.!?])\s+', text)
+        summary = sentences[0] if sentences else text
+        if len(sentences) > 1:
+            summary += " " + sentences[1]
+        
+        # Determine sentiment (very basic approach)
+        # For a more accurate sentiment, you'd want to use a dedicated model
+        positive_words = ['good', 'great', 'excellent', 'happy', 'positive', 'wonderful', 'awesome']
+        negative_words = ['bad', 'poor', 'terrible', 'sad', 'negative', 'horrible', 'awful']
+        
+        text_lower = text.lower()
+        positive_count = sum([1 for word in positive_words if word in text_lower])
+        negative_count = sum([1 for word in negative_words if word in text_lower])
+        
+        if positive_count > negative_count:
+            sentiment = "positive"
+        elif negative_count > positive_count:
+            sentiment = "negative"
+        else:
+            sentiment = "neutral"
+        
+        analysis = {
+            "sentiment": sentiment,
+            "length": char_count,
+            "words": word_count,
+            "summary": summary if len(summary) < 150 else summary[:147] + "..."
+        }
+        
+        return jsonify({"analysis": analysis})
+        
+    except Exception as e:
+        logger.error(f"Error analyzing text: {str(e)}")
+        return jsonify({"error": f"Failed to analyze text: {str(e)}"}), 500
 
 @app.route('/api/chat', methods=['POST'])
 def chat_endpoint():
@@ -96,11 +249,28 @@ def chat_endpoint():
         return jsonify({"error": "No message provided"}), 400
     
     try:
+        # Check if the message is asking for information that might require web searching
+        search_keywords = ["what is", "who is", "how to", "where is", "when was", "why is", 
+                           "tell me about", "information on", "search for", "lookup", "find info"]
+        
+        needs_search = any(keyword in message.lower() for keyword in search_keywords)
+        
+        web_search_result = None
+        if needs_search:
+            # Extract the search query - take everything after the search keyword
+            for keyword in search_keywords:
+                if keyword in message.lower():
+                    search_query = message.lower().split(keyword, 1)[1].strip()
+                    web_search_result = search_web(search_query)
+                    break
+        
         # Initialize model if not already loaded
         if not initialize_model():
             # Fallback responses if model fails to load
             logger.warning("Model not loaded. Using fallback responses.")
-            if "weather" in message.lower():
+            if web_search_result:
+                response = f"I found this information about your query:\n\n{web_search_result['content']}\n\nSource: {web_search_result['source']}"
+            elif "weather" in message.lower():
                 response = "The weather is currently sunny with a temperature of 72°F."
             elif "news" in message.lower():
                 response = "Today's top headline: Scientists make breakthrough in quantum computing."
@@ -112,8 +282,18 @@ def chat_endpoint():
             return jsonify({"response": response})
         
         # Prepare prompt for the model
-        system_message = "You are J.A.R.V.I.S (Just A Rather Very Intelligent System), a helpful and sophisticated AI assistant. Respond in a polite, concise, and informative manner."
-        prompt = f"{system_message}\n\nUser: {message}\n\nJ.A.R.V.I.S:"
+        system_message = """You are J.A.R.V.I.S (Just A Rather Very Intelligent System), a helpful, friendly, and sophisticated AI assistant. 
+        Respond in a polite, concise, informative, and conversational manner. Be engaging, show personality, and aim to be helpful.
+        Avoid being overly formal. Use contractions and conversational language to sound more natural.
+        Your goal is to assist the user with their questions and tasks to the best of your ability."""
+        
+        prompt = f"{system_message}\n\n"
+        
+        # Add web search results if available
+        if web_search_result:
+            prompt += f"Information from web search: {web_search_result['content']}\n\n"
+            
+        prompt += f"User: {message}\n\nJ.A.R.V.I.S:"
         
         # Generate response using the local model
         start_time = time.time()
@@ -122,10 +302,10 @@ def chat_endpoint():
         generation = text_generation(
             prompt,
             do_sample=True,
-            temperature=0.7,
-            max_new_tokens=300,
+            temperature=0.8,  # Slightly higher temperature for more creative responses
+            max_new_tokens=350,  # Allow longer responses
             top_p=0.95,
-            repetition_penalty=1.1
+            repetition_penalty=1.2  # Higher repetition penalty to avoid repeating phrases
         )
         
         # Extract the generated text from the model's output
@@ -133,6 +313,12 @@ def chat_endpoint():
         
         # Clean up the response to only include the assistant's reply
         response = generated_text.split("J.A.R.V.I.S:")[-1].strip()
+        
+        # If we used web search data, include citation
+        if web_search_result and web_search_result["url"]:
+            response += f"\n\nSource: {web_search_result['source']}"
+            if web_search_result["url"]:
+                response += f" - {web_search_result['url']}"
         
         elapsed_time = time.time() - start_time
         logger.info(f"Response generated in {elapsed_time:.2f} seconds")

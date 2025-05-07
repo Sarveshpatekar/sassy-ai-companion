@@ -13,6 +13,8 @@ export interface ScrapeResponse {
 
 export interface ChatResponse {
   response: string;
+  source?: string;
+  url?: string;
 }
 
 export interface TextAnalysisResponse {
@@ -24,9 +26,15 @@ export interface TextAnalysisResponse {
   };
 }
 
+export interface ModelChangeResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
 export const ApiService = {
   // Health check to see if the backend is running
-  checkHealth: async (): Promise<{ status: string; message: string }> => {
+  checkHealth: async (): Promise<{ status: string; message: string; model?: {loaded: boolean; name: string} }> => {
     const response = await axios.get(`${API_BASE_URL}/health`);
     return response.data;
   },
@@ -46,6 +54,12 @@ export const ApiService = {
   // Chat with Jarvis AI
   sendChatMessage: async (message: string): Promise<ChatResponse> => {
     const response = await axios.post(`${API_BASE_URL}/chat`, { message });
+    return response.data;
+  },
+  
+  // Change the AI model
+  changeModel: async (model: string): Promise<ModelChangeResponse> => {
+    const response = await axios.post(`${API_BASE_URL}/change-model`, { model });
     return response.data;
   }
 };

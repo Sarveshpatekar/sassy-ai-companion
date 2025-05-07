@@ -10,7 +10,10 @@ import TasksCard, { Task } from './TasksCard';
 import SystemStatus from './SystemStatus';
 import ShareButton from './ShareButton';
 import VoiceSelector, { VoiceType } from './VoiceSelector';
+import ModelSelector from './ModelSelector';
+import WebScraper from './WebScraper';
 import ApiService from '@/services/apiService';
+import { useToast } from "@/hooks/use-toast";
 import { 
   getWeatherData, 
   getNewsData, 
@@ -26,7 +29,14 @@ import {
   VoiceType as SpeechVoiceType
 } from '@/utils/speechService';
 
-const Jarvis: React.FC = () => {
+interface JarvisProps {
+  initialModelInfo?: {
+    loaded: boolean;
+    name: string | null;
+  };
+}
+
+const Jarvis: React.FC<JarvisProps> = ({ initialModelInfo }) => {
   // State
   const [messages, setMessages] = useState<ChatMessageProps[]>([
     {
@@ -49,21 +59,28 @@ const Jarvis: React.FC = () => {
   // Always set female voice as default
   const [voiceType, setVoiceType] = useState<VoiceType>('female');
   const [isBackendConnected, setIsBackendConnected] = useState(false);
+  const [modelInfo, setModelInfo] = useState<{loaded: boolean; name: string | null}>(
+    initialModelInfo || { loaded: false, name: null }
+  );
   
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const speechRecognitionRef = useRef<SpeechRecognition | null>(null);
+  const { toast } = useToast();
   
   // Effects
   // Check if backend is running
   useEffect(() => {
     const checkBackendConnection = async () => {
       try {
-        await ApiService.checkHealth();
+        const response = await ApiService.checkHealth();
         setIsBackendConnected(true);
+        if (response.model) {
+          setModelInfo(response.model);
+        }
         setMessages(prev => [...prev, {
           type: 'system',
-          content: 'Connected to Jarvis AI backend service.',
+          content: `Connected to Jarvis AI backend service.${response.model?.loaded ? ` Using model: ${response.model.name}` : ''}`,
           timestamp: new Date()
         }]);
       } catch (error) {
@@ -126,7 +143,12 @@ const Jarvis: React.FC = () => {
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
     if (lastMessage && lastMessage.type === 'assistant') {
-      speak(lastMessage.content, voiceType);
+      // Remove source attribution before speaking
+      let textToSpeak = lastMessage.content;
+      if (textToSpeak.includes('Source:')) {
+        textToSpeak = textToSpeak.split('Source:')[0].trim();
+      }
+      speak(textToSpeak, voiceType);
     }
   }, [messages, voiceType]);
   
@@ -187,6 +209,12 @@ const Jarvis: React.FC = () => {
         content: "I apologize, but I'm having trouble processing your request at the moment.",
         timestamp: new Date()
       }));
+      
+      toast({
+        title: "Error",
+        description: "Failed to get a response. The backend may be overloaded or disconnected.",
+        variant: "destructive",
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -242,6 +270,19 @@ const Jarvis: React.FC = () => {
     }]);
   };
   
+  const handleModelChange = (newModel: string) => {
+    setModelInfo({
+      loaded: true,
+      name: newModel
+    });
+    
+    setMessages(prev => [...prev, {
+      type: 'system',
+      content: `AI model changed to ${newModel.split('/').pop()}`,
+      timestamp: new Date()
+    }]);
+  };
+  
   const handleTextAnalysis = async (text: string) => {
     if (!isBackendConnected) {
       setMessages(prev => [...prev, {
@@ -280,6 +321,14 @@ const Jarvis: React.FC = () => {
     }
   };
   
+  const handleWebScraperData = (data: string) => {
+    if (data.length > 500) {
+      data = data.substring(0, 500) + "... (content truncated for brevity)";
+    }
+    
+    handleUserMessage(`Please analyze this HTML content: ${data}`);
+  };
+  
   return (
     <div className="flex flex-col h-screen bg-jarvis-dark text-white relative overflow-hidden">
       {/* Background gradient */}
@@ -299,7 +348,10 @@ const Jarvis: React.FC = () => {
         {isBackendConnected && (
           <div className="flex items-center">
             <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
-            <span className="text-xs text-gray-400">Backend Connected</span>
+            <span className="text-xs text-gray-400">
+              Backend Connected
+              {modelInfo?.name && ` • ${modelInfo.name.split('/').pop()}`}
+            </span>
           </div>
         )}
       </header>
@@ -346,6 +398,13 @@ const Jarvis: React.FC = () => {
               isLoading={weatherData.isLoading}
             />
             
+            {isBackendConnected && (
+              <ModelSelector
+                currentModel={modelInfo?.name || undefined}
+                onModelChange={handleModelChange}
+              />
+            )}
+            
             <VoiceSelector
               currentVoice={voiceType}
               onVoiceChange={handleVoiceChange}
@@ -356,6 +415,10 @@ const Jarvis: React.FC = () => {
               onTaskToggle={handleTaskToggle}
               onTaskAdd={handleTaskAdd}
               onTaskDelete={handleTaskDelete}
+            />
+            
+            <WebScraper
+              onDataReceived={handleWebScraperData}
             />
             
             <NewsCard news={newsData} />

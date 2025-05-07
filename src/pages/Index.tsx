@@ -8,12 +8,19 @@ import ApiService from '@/services/apiService';
 const Index = () => {
   const [backendConnected, setBackendConnected] = useState<boolean>(false);
   const [checkingBackend, setCheckingBackend] = useState<boolean>(true);
+  const [modelInfo, setModelInfo] = useState<{loaded: boolean; name: string | null}>({
+    loaded: false,
+    name: null
+  });
 
   useEffect(() => {
     const checkBackendStatus = async () => {
       try {
-        await ApiService.checkHealth();
+        const response = await ApiService.checkHealth();
         setBackendConnected(true);
+        if (response.model) {
+          setModelInfo(response.model);
+        }
       } catch (error) {
         console.error('Backend connection failed:', error);
         setBackendConnected(false);
@@ -23,6 +30,11 @@ const Index = () => {
     };
     
     checkBackendStatus();
+
+    // Check status periodically
+    const interval = setInterval(checkBackendStatus, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -38,7 +50,7 @@ const Index = () => {
           </AlertDescription>
         </Alert>
       )}
-      <Jarvis />
+      <Jarvis initialModelInfo={modelInfo} />
     </div>
   );
 };
